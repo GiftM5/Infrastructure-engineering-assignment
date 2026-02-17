@@ -58,9 +58,6 @@ global
     log /dev/log local0
     maxconn 50000
     daemon
-    # TLS best-practices (adjust cipher list as required)
-    ssl-default-bind-options no-sslv3 no-tlsv10 no-tlsv11
-    ssl-default-bind-ciphers ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305
 
 defaults
     mode http
@@ -68,33 +65,13 @@ defaults
     timeout client 50s
     timeout server 50s
 
-# --- Certificate location ---
-# Combine your cert and private key into a single PEM file (certificate first, then private key):
-# /etc/haproxy/certs/example.com.pem
-# Example command to assemble (run as root):
-# cat fullchain.pem privkey.pem > /etc/haproxy/certs/example.com.pem
-# Set permissions: chmod 640 /etc/haproxy/certs/example.com.pem; chown root:root /etc/haproxy/certs/example.com.pem
-
 frontend http_front
-    # Listen on HTTP and redirect to HTTPS
     bind *:80
-    mode http
-    option http-server-close
-    redirect scheme https code 301 if !{ ssl_fc }
-
-frontend https_front
-    # Terminate TLS here — use combined PEM file(s)
-    # Replace example.com.pem with your certificate file (can include multiple certs)
-    bind *:443 ssl crt /etc/haproxy/certs/example.com.pem alpn h2,http/1.1
-    mode http
-    option forwardfor
     default_backend web_servers
 
 backend web_servers
     balance roundrobin
-    option httpchk GET /health
-    http-check expect status 200
-    # Forward to application servers over HTTP on internal network
+    option httpchk
     server web1 10.0.0.20:80 check
     server web2 10.0.0.21:80 check
     server web3 10.0.0.22:80 check
